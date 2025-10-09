@@ -1,258 +1,242 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Building2, Plus, X, QrCode } from 'lucide-react';
+import { Calendar, Clock, Building2, QrCode, Scan } from 'lucide-react';
 import QRCodeGenerator from '../components/QRCodeGenerator';
+import QRScanner from '../components/QRScanner';
+import { useAuth } from '../context/AuthContext';
+import { decodeJWT } from '../utils/googleAuth';
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      hospital: 'City General Hospital',
-      doctor: 'Dr. Sarah Johnson',
-      specialization: 'General Medicine',
-      date: '2025-10-15',
-      time: '10:00 AM',
-      status: 'Pending'
-    },
-    {
-      id: 2,
-      hospital: 'Medicare Clinic',
-      doctor: 'Dr. Michael Chen',
-      specialization: 'Cardiology',
-      date: '2025-10-08',
-      time: '2:30 PM',
-      status: 'Visited'
-    },
-    {
-      id: 3,
-      hospital: 'HealthCare Plus',
-      doctor: 'Dr. Emily Rodriguez',
-      specialization: 'Dermatology',
-      date: '2025-10-20',
-      time: '11:15 AM',
-      status: 'Pending'
-    }
-  ]);
-  
-  const [showDateModal, setShowDateModal] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
+  const { token, user, isAuthenticated, loading: authLoading } = useAuth();
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showQRGenerator, setShowQRGenerator] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   
-  // For demo purposes, using a static user ID
-  const currentUserId = 'user_12345';
+  // Get patient ID from JWT token or user object
+  let patientId = null;
+  if (token) {
+    const decoded = decodeJWT(token);
+    patientId = decoded?.id || decoded?.patient_id || user?.id;
+  }
 
-  // Available time slots
-  const timeSlots = [
-    '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-    '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'
-  ];
-
-  const handleBookAgain = (appointment) => {
-    setSelectedAppointment(appointment);
-    setShowDateModal(true);
-    setSelectedDate('');
-    setSelectedTime('');
-  };
-
-  const handleScheduleAppointment = () => {
-    if (selectedDate && selectedTime && selectedAppointment) {
-      const newAppointment = {
-        id: appointments.length + 1,
-        hospital: selectedAppointment.hospital,
-        doctor: selectedAppointment.doctor,
-        specialization: selectedAppointment.specialization,
-        date: selectedDate,
-        time: selectedTime,
-        status: 'Pending'
-      };
-
-      setAppointments([...appointments, newAppointment]);
-      setShowDateModal(false);
-      setSelectedAppointment(null);
-      setSelectedDate('');
-      setSelectedTime('');
+  // Fetch appointments from backend
+  useEffect(() => {
+    async function fetchAppointments() {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return;
+      }
       
-      // Show success message (you can replace this with a toast notification)
-      alert('Appointment scheduled successfully!');
+      if (!isAuthenticated || !patientId) {
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
+      const url = `/dev/appointment?patient_id=${patientId}`;
+      
+      try {
+        const headers = {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        };
+        
+        const res = await fetch(url, { 
+          method: 'GET',
+          headers,
+          credentials: 'include'
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+        
+        const data = await res.json();
+        
+        // Check if bookings exist and is an array
+        if (data.bookings && Array.isArray(data.bookings)) {
+          setAppointments(data.bookings);
+        } else {
+          setAppointments([]);
+        }
+      } catch (e) {
+        console.error('Error fetching appointments:', e);
+        setAppointments([]);
+      }
+      setLoading(false);
     }
-  };
+    fetchAppointments();
+  }, [patientId, token, isAuthenticated, authLoading]);
 
-  const closeModal = () => {
-    setShowDateModal(false);
-    setSelectedAppointment(null);
-    setSelectedDate('');
-    setSelectedTime('');
-  };
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/');
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  // Show loading while auth is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login message if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Please Login</h1>
+          <p className="text-gray-600 mb-6">You need to be logged in to view your appointments</p>
+          <button
+            onClick={() => navigate('/')}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 py-4 sm:py-6 lg:py-8 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">My Appointments</h1>
-          <p className="text-sm sm:text-base text-gray-600">View and manage your healthcare appointments</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">My Appointments</h1>
+          <p className="text-gray-600">View your healthcare appointments</p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
-          {appointments.map((appointment) => (
-            <div
-              key={appointment.id}
-              className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-4 sm:p-6"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Building2 className="text-blue-600" size={24} />
-                  <div>
-                    <h3 className="font-semibold text-base sm:text-lg text-gray-800">
-                      {appointment.hospital}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-600">{appointment.doctor}</p>
-                    <p className="text-xs text-blue-600">{appointment.specialization}</p>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
                   </div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center text-gray-500 mt-20">
+            <Building2 size={48} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-lg">No appointments found</p>
+            <p className="text-sm">Book your first appointment to get started</p>
                 </div>
-              </div>
-
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center gap-2 text-gray-600">
+        ) : (
+          <div className="space-y-4">
+            {appointments.map((appointment) => {
+              
+              // Get status color and text
+              const getStatusInfo = (status) => {
+                switch (status?.toLowerCase()) {
+                  case 'booked':
+                    return { color: 'bg-blue-100 text-blue-700', text: 'Booked' };
+                  case 'confirmed':
+                    return { color: 'bg-green-100 text-green-700', text: 'Confirmed' };
+                  case 'arrived':
+                    return { color: 'bg-yellow-100 text-yellow-700', text: 'Arrived' };
+                  case 'completed':
+                    return { color: 'bg-gray-100 text-gray-700', text: 'Completed' };
+                  case 'cancelled':
+                    return { color: 'bg-red-100 text-red-700', text: 'Cancelled' };
+                  default:
+                    return { color: 'bg-gray-100 text-gray-700', text: status || 'Unknown' };
+                }
+              };
+              
+              const statusInfo = getStatusInfo(appointment.status);
+              
+              return (
+                <div key={appointment.id} className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <Building2 className="text-blue-600" size={32} />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-xl text-gray-800 mb-2">
+                          {appointment.hospital_name || `Hospital #${appointment.hospital_id || 'N/A'}`}
+                        </h3>
+                        <div className="flex items-center gap-6 text-gray-600">
+                          <div className="flex items-center gap-2">
                   <Calendar size={18} />
-                  <span className="text-sm sm:text-base">{appointment.date}</span>
+                            <span className="font-medium">{appointment.slot_date || '—'}</span>
                 </div>
-
-                <div className="flex items-center gap-2 text-gray-600">
+                          <div className="flex items-center gap-2">
                   <Clock size={18} />
-                  <span className="text-sm sm:text-base">{appointment.time}</span>
+                            <span className="font-medium">{appointment.slot_time || '—'}</span>
+                          </div>
+                        </div>
+                      </div>
                 </div>
 
-                <div className="pt-2">
-                  <span
-                    className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
-                      appointment.status === 'Visited'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
-                  >
-                    {appointment.status}
+                    {/* Status Badge */}
+                    <div className="flex items-center">
+                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color}`}>
+                        {statusInfo.text}
                   </span>
+                    </div>
                 </div>
 
-                <div className="pt-2 sm:pt-3 border-t border-gray-100">
-                  <button
-                    onClick={() => handleBookAgain(appointment)}
-                    className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm transition-colors"
-                  >
-                    <Plus size={14} className="sm:w-4 sm:h-4" />
-                    Book Again
-                  </button>
+                  {/* Additional appointment details if available */}
+                  {appointment.symptoms && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="text-sm text-gray-600">
+                        <div className="mb-2">
+                          <span className="font-medium">Symptoms:</span> {appointment.symptoms}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              );
+            })}
               </div>
-            </div>
-          ))}
-        </div>
+        )}
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-8">
           <button
             onClick={() => navigate('/create')}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 sm:px-8 py-2 sm:py-3 rounded-lg text-sm sm:text-base lg:text-lg transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 duration-200"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl"
           >
-            Book Another Appointment
+            Book New Appointment
           </button>
           
           <button
             onClick={() => setShowQRGenerator(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base lg:text-lg transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 duration-200"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl"
           >
-            <QrCode size={16} className="sm:w-5 sm:h-5" />
+            <QrCode size={20} />
             My QR Code
+          </button>
+          
+          <button
+            onClick={() => setShowQRScanner(true)}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl"
+          >
+            <Scan size={20} />
+            Scan QR Code
           </button>
         </div>
       </div>
 
-      {/* Date Selection Modal */}
-      {showDateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Schedule New Appointment</h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            {selectedAppointment && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-semibold text-lg text-gray-800">{selectedAppointment.hospital}</h3>
-                <p className="text-gray-600">{selectedAppointment.doctor}</p>
-                <p className="text-sm text-blue-600">{selectedAppointment.specialization}</p>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Select Date
-                </label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">
-                  Select Time
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => setSelectedTime(time)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedTime === time
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={closeModal}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleScheduleAppointment}
-                  disabled={!selectedDate || !selectedTime}
-                  className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                >
-                  Schedule Appointment
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* QR Code Generator Modal */}
       {showQRGenerator && (
         <QRCodeGenerator
-          userId={currentUserId}
+          userId={patientId || 'user_12345'}
           onClose={() => setShowQRGenerator(false)}
+        />
+      )}
+
+      {/* QR Scanner Modal */}
+      {showQRScanner && (
+        <QRScanner
+          onClose={() => setShowQRScanner(false)}
+          onScanSuccess={(result) => {
+            alert('QR code scanned successfully! Doctor has been notified.');
+          }}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
-const DEFAULT_BASE_URL = 'https://n4m5blv5-3600.inc1.devtunnels.ms';
-const BASE_URL = (import.meta?.env?.VITE_BACKEND_URL || '').trim() || DEFAULT_BASE_URL;
+// Prefer using Vite dev proxy in development to avoid CORS.
+// If VITE_BACKEND_URL is set, we'll call that directly; otherwise use relative path (proxy).
+const BASE_URL = (import.meta?.env?.VITE_BACKEND_URL || '').trim();
 
 export async function postJSON(path, body, options = {}) {
   const url = `${BASE_URL}${path}`;
@@ -10,7 +11,8 @@ export async function postJSON(path, body, options = {}) {
       ...(options.headers || {})
     },
     body: JSON.stringify(body),
-    credentials: 'include'
+    // Avoid credentials by default to reduce CORS complexity; enable via options if needed
+    ...(options.credentials ? { credentials: options.credentials } : {})
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -23,4 +25,17 @@ export function getBaseUrl() {
   return BASE_URL;
 }
 
+export async function putJSON(path, body, options = {}) {
+  const url = `${BASE_URL}${path}`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text() || `Request failed: ${res.status}`);
+  return res.json();
+}
 

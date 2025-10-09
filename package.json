@@ -11,9 +11,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.4",
     "@googlemaps/react-wrapper": "^1.2.0",
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.57.4",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.344.0",
     "qr-scanner": "^1.4.2",
     "react": "^18.3.1",

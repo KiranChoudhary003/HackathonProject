@@ -11,7 +11,15 @@ function Navbar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
             <Heart className="text-blue-600" size={28} />
-            <span className="font-bold text-xl text-gray-800">HealthCare</span>
+            <span className="font-bold text-xl text-gray-800 flex items-center">
+              Med
+              <span className="ml-1 inline-flex items-center justify-center align-middle" aria-label="plus">
+                <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="block">
+                  <line x1="12" y1="3" x2="12" y2="21" stroke="#e11d48" strokeWidth="4.5" strokeLinecap="round"/>
+                  <line x1="3" y1="12" x2="21" y2="12" stroke="#e11d48" strokeWidth="4.5" strokeLinecap="round"/>
+                </svg>
+              </span>
+            </span>
           </div>
 
           <div className="flex gap-1 items-center">
