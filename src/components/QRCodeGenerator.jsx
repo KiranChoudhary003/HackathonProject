@@ -71,3 +71,4 @@ const QRCodeGenerator = ({ userId, onClose }) => {
 };
 
 export default QRCodeGenerator;
+

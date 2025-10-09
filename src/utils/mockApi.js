@@ -34,3 +34,4 @@ export const scanUserAPI = async (scanData) => {
     throw new Error('Failed to process scan');
   }
 };
+

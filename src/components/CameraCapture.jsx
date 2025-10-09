@@ -191,3 +191,4 @@ const CameraCapture = ({ onCapture, onClose }) => {
 };
 
 export default CameraCapture;
+

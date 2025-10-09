@@ -1,8 +1,18 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, Calendar, Clock, Shield, MapPin, Camera, LogIn } from 'lucide-react';
+import { Heart, Calendar, Clock, Shield, MapPin, Camera } from 'lucide-react';
+import GoogleAuth from '../components/GoogleAuth';
+import { useAuth } from '../context/AuthContext';
 
 function Home() {
   const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, loading, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -78,13 +88,9 @@ function Home() {
               </div>
             </div>
 
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center justify-center space-x-3 w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg group text-sm sm:text-base"
-            >
-              <LogIn className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="font-semibold">Login to Dashboard</span>
-            </button>
+            <div className="flex items-center">
+              <GoogleAuth onAfterLogin={() => navigate('/dashboard')} />
+            </div>
           </div>
 
           <div className="hidden lg:block">

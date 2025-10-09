@@ -60,3 +60,4 @@ If no API key is provided or if Google Maps fails to load, the application will:
 - Hide the map selection buttons
 - Display a helpful message about setting up the API key
 - Still allow manual location entry
+
