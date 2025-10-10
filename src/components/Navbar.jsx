@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, LayoutDashboard, Plus, Heart, LogOut } from 'lucide-react';
+import { Home, LayoutDashboard, Plus, Heart, LogOut, Activity } from 'lucide-react';
 import GoogleAuth from './GoogleAuth';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,13 +10,13 @@ function Navbar() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
-            <Heart className="text-blue-600" size={28} />
+            <Activity className="w-8 h-8 text-emerald-500" />
             <span className="font-bold text-xl text-gray-800 flex items-center">
               Med
               <span className="ml-1 inline-flex items-center justify-center align-middle" aria-label="plus">
                 <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="block">
-                  <line x1="12" y1="3" x2="12" y2="21" stroke="#e11d48" strokeWidth="4.5" strokeLinecap="round"/>
-                  <line x1="3" y1="12" x2="21" y2="12" stroke="#e11d48" strokeWidth="4.5" strokeLinecap="round"/>
+                  <line x1="12" y1="3" x2="12" y2="21" stroke="#10b981" strokeWidth="4.5" strokeLinecap="round"/>
+                  <line x1="3" y1="12" x2="21" y2="12" stroke="#10b981" strokeWidth="4.5" strokeLinecap="round"/>
                 </svg>
               </span>
             </span>
@@ -48,7 +48,7 @@ function Navbar() {
               }
             >
               <LayoutDashboard size={18} />
-              <span className="font-medium">Dashboard</span>
+              <span className="font-medium">Appointment</span>
             </NavLink>
 
             <NavLink
@@ -62,7 +62,7 @@ function Navbar() {
               }
             >
               <Plus size={18} />
-              <span className="font-medium">Create</span>
+              <span className="font-medium">Book Appointment</span>
             </NavLink>
 
             <NavLink

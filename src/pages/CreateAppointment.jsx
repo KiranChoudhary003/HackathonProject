@@ -180,7 +180,7 @@ function CreateAppointment() {
           <p className="text-gray-600 mb-8">Fill in your details to book an appointment</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
+            {/* <div>
               <label className="flex items-center gap-2 text-gray-700 font-medium mb-2">
                 <User size={20} />
                 Name
@@ -193,7 +193,7 @@ function CreateAppointment() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 required
               />
-            </div>
+            </div> */}
 
 
             <div>
@@ -203,7 +203,7 @@ function CreateAppointment() {
               </label>
               <div className="space-y-3">
                 <div className="flex gap-2">
-                  <button
+                  {/* <button
                     type="button"
                     onClick={useCurrentLocation}
                     className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
@@ -211,15 +211,15 @@ function CreateAppointment() {
                     title="Use my current location"
                   >
                     {isLocating ? 'Detecting…' : 'Use Current Location'}
-                  </button>
-                  <input
+                  </button> */}
+                  {/* <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="Enter your location"
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    required
-                  />
+                    required */}
+                  {/* /> */}
                 </div>
                 <OpenStreetMapPicker
                   onLocationChange={handleLocationChange}

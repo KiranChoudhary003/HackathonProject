@@ -204,13 +204,13 @@ function Dashboard() {
             Book New Appointment
           </button>
           
-          <button
+          {/* <button
             onClick={() => setShowQRGenerator(true)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-lg text-lg transition-colors shadow-lg hover:shadow-xl"
           >
             <QrCode size={20} />
             My QR Code
-          </button>
+          </button> */}
           
           <button
             onClick={() => setShowQRScanner(true)}
