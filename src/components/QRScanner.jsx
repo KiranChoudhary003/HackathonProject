@@ -339,13 +339,25 @@ const detectQRCode = (imageData) => {
     try {
       const obj = JSON.parse(qrContent);
       if (obj.doctorId) {
-        return { doctorId: obj.doctorId, timestamp: new Date().toISOString(), type: 'doctor_qr' };
+        return {
+          doctorId: obj.doctorId,
+          timestamp: new Date().toISOString(),
+          type: 'doctor_qr',
+        };
       }
     } catch {
       if (qrContent.startsWith('doctorId=')) {
-        return { doctorId: qrContent.replace('doctorId=', ''), timestamp: new Date().toISOString(), type: 'doctor_qr' };
+        return {
+          doctorId: qrContent.replace('doctorId=', ''),
+          timestamp: new Date().toISOString(),
+          type: 'doctor_qr',
+        };
       }
-      return { doctorId: qrContent, timestamp: new Date().toISOString(), type: 'doctor_qr' };
+      return {
+        doctorId: qrContent,
+        timestamp: new Date().toISOString(),
+        type: 'doctor_qr',
+      };
     }
   }
   return null;
@@ -376,15 +388,16 @@ function QRScanner({ onClose, onScanSuccess }) {
 
     startCamera();
 
-    return () => stopCamera();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      stopCamera();
+      if (scanInterval) {
+        clearInterval(scanInterval);
+      }
+    };
   }, [patientId]);
 
   const startCamera = async () => {
     try {
-      // Stop existing stream if any
-      stopCamera();
-
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
       });
@@ -392,12 +405,12 @@ function QRScanner({ onClose, onScanSuccess }) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(err => console.warn('Video play error:', err));
-
         setScanning(true);
         setError(null);
 
-        const interval = setInterval(scanQRCode, 200); // Scan every 200ms
+        const interval = setInterval(() => {
+          scanQRCode();
+        }, 200); // Scan every 200ms
         setScanInterval(interval);
       }
     } catch (err) {
@@ -458,7 +471,10 @@ function QRScanner({ onClose, onScanSuccess }) {
       setIsProcessing(true);
       setScanning(false);
 
-      stopCamera();
+      if (scanInterval) {
+        clearInterval(scanInterval);
+        setScanInterval(null);
+      }
 
       const scanData = {
         doctorId: qrData.doctorId,
